@@ -15,6 +15,7 @@ type
     aCheckState: TCheckState;// csCheckedNormal/csUncheckedNormal
     aCheckType: TCheckType;  // ctCheckBox/ctRadioButton
     aChildIsDepend: Boolean; // дизейблить ли детей при отметке checkbox
+    aSiblingIsDepend: Boolean; // дизейблить ли узлы этого же уровня при отметке checkbox
   end;
 
   { TForm1 }
@@ -110,6 +111,7 @@ begin
       Data^.aCheckType:= ctCheckBox;
       Data^.aCheckState:= csUncheckedNormal;
       Data^.aChildIsDepend:= True;
+      Data^.aSiblingIsDepend:= True;
     end;
   end;
 
@@ -124,6 +126,7 @@ begin
       Data^.aCheckType:= ctCheckBox;
       Data^.aCheckState:= csUncheckedNormal;
       Data^.aChildIsDepend:= False;
+      Data^.aSiblingIsDepend:= False;
     end;
   end;
 
@@ -138,6 +141,7 @@ begin
       Data^.aCheckType:= ctRadioButton;
       Data^.aCheckState:= cscheckedNormal;
       Data^.aChildIsDepend:= False;
+      Data^.aSiblingIsDepend:= False;
     end;
   end;
 
@@ -151,6 +155,7 @@ begin
       Data^.aCheckType:= ctRadioButton;
       Data^.aCheckState:= csUncheckedNormal;
       Data^.aChildIsDepend:= False;
+      Data^.aSiblingIsDepend:= False;
     end;
   end;
 
@@ -164,6 +169,7 @@ begin
       Data^.aCheckType:= ctRadioButton;
       Data^.aCheckState:= csUncheckedNormal;
       Data^.aChildIsDepend:= False;
+      Data^.aSiblingIsDepend:= False;
     end;
   end;
 
@@ -178,6 +184,7 @@ begin
       Data^.aCheckType:= ctCheckBox;
       Data^.aCheckState:= csUncheckedNormal;
       Data^.aChildIsDepend:= False;
+      Data^.aSiblingIsDepend:= False;
     end;
   end;
 
@@ -192,6 +199,7 @@ begin
       Data^.aCheckType:= ctCheckBox;
       Data^.aCheckState:= csCheckedNormal;
       Data^.aChildIsDepend:= False;
+      Data^.aSiblingIsDepend:= False;
     end;
   end;
 
@@ -206,6 +214,7 @@ begin
       Data^.aCheckType:= ctRadioButton;
       Data^.aCheckState:= cscheckedNormal;
       Data^.aChildIsDepend:= False;
+      Data^.aSiblingIsDepend:= False;
     end;
   end;
 
@@ -219,6 +228,7 @@ begin
       Data^.aCheckType:= ctRadioButton;
       Data^.aCheckState:= csUncheckedNormal;
       Data^.aChildIsDepend:= False;
+      Data^.aSiblingIsDepend:= False;
     end;
   end;
 
@@ -232,6 +242,7 @@ begin
       Data^.aCheckType:= ctRadioButton;
       Data^.aCheckState:= csUncheckedNormal;
       Data^.aChildIsDepend:= False;
+      Data^.aSiblingIsDepend:= False;
     end;
   end;
 
@@ -246,6 +257,7 @@ begin
       Data^.aCheckType:= ctNone;
       Data^.aCheckState:= csCheckedNormal;
       Data^.aChildIsDepend:= False;
+      Data^.aSiblingIsDepend:= False;
     end;
   end;
 
@@ -274,6 +286,7 @@ procedure TForm1.vstChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
 var
   Data: PMyRec;
   IsChecked: Boolean;
+  SiblingNode: PVirtualNode = nil;
 
   // Локальная процедура для обхода дочерних узлов
   procedure SetChildrenDisabledState(ParentNode: PVirtualNode; Disable: Boolean);
@@ -311,6 +324,34 @@ begin
 
     // Если отмечен, то Disable = False (энейблим). Иначе Disable = True (дизейблим).
     SetChildrenDisabledState(Node, not IsChecked);
+  end;
+
+  // 3. Если узлы того же уровня зависят от состояния данного узла
+  if Data^.aSiblingIsDepend then
+  begin
+    // Узлы активны если текущий узел отмечен или в смешанном состоянии
+    IsChecked := (Data^.aCheckState = csCheckedNormal)
+              or (Data^.aCheckState = csCheckedPressed)
+              or (Data^.aCheckState = csMixedNormal)
+              or (Data^.aCheckState = csMixedPressed);
+
+    // Обходим всех братьев (sibling) текущего узла
+    // Первый брат — первый ребёнок родителя
+    if Assigned(Node^.Parent) then
+      SiblingNode := (Node^.Parent)^.FirstChild
+    else
+      SiblingNode := Sender.GetFirst;
+    while Assigned(SiblingNode) do
+    begin
+      // Пропускаем сам текущий узел
+      if (SiblingNode <> Node) then
+      begin
+        Sender.IsDisabled[SiblingNode] := not IsChecked;
+        if (SiblingNode^.ChildCount > 0) then SetChildrenDisabledState(SiblingNode, not IsChecked);
+      end;
+      //SiblingNode := Sender.GetNextSibling(SiblingNode);
+      SiblingNode := SiblingNode^.NextSibling;
+    end;
   end;
 end;
 
