@@ -24,6 +24,8 @@ type
     vst: TLazVirtualStringTree;
     procedure FormCreate(Sender: TObject);
     procedure vstChecked(Sender: TBaseVirtualTree; Node: PVirtualNode);
+    procedure vstChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
+      var NewState: TCheckState; var Allowed: Boolean);
     procedure vstFreeNode(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstGetNodeDataSize(Sender: TBaseVirtualTree;
       var NodeDataSize: Integer);
@@ -125,7 +127,7 @@ begin
       Data^.aCaption:= 'level:2 idx:1';
       Data^.aCheckType:= ctCheckBox;
       Data^.aCheckState:= csUncheckedNormal;
-      Data^.aChildIsDepend:= False;
+      Data^.aChildIsDepend:= True;
       Data^.aSiblingIsDepend:= False;
     end;
   end;
@@ -344,15 +346,23 @@ begin
     while Assigned(SiblingNode) do
     begin
       // Пропускаем сам текущий узел
-      if (SiblingNode <> Node) then
-      begin
-        Sender.IsDisabled[SiblingNode] := not IsChecked;
-        if (SiblingNode^.ChildCount > 0) then SetChildrenDisabledState(SiblingNode, not IsChecked);
-      end;
+      if (SiblingNode <> Node) then Sender.IsDisabled[SiblingNode] := not IsChecked;
+      if (SiblingNode^.ChildCount > 0) then SetChildrenDisabledState(SiblingNode, not IsChecked);
       //SiblingNode := Sender.GetNextSibling(SiblingNode);
       SiblingNode := SiblingNode^.NextSibling;
     end;
   end;
+end;
+
+procedure TForm1.vstChecking(Sender: TBaseVirtualTree; Node: PVirtualNode;
+  var NewState: TCheckState; var Allowed: Boolean);
+var
+  Data: PMyRec = nil;
+  NodeLvl: SizeInt = -1;
+begin
+  NodeLvl:= Sender.GetNodeLevel(Node);
+  Data:= Sender.GetNodeData(Node);
+  if Assigned(Data) then Allowed:= Data^.aSiblingIsDepend or (NodeLvl > 0);
 end;
 
 procedure TForm1.vstGetNodeDataSize(Sender: TBaseVirtualTree;

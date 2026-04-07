@@ -28,6 +28,7 @@ object Form1: TForm1
     Header.MainColumn = -1
     TabOrder = 0
     OnChecked = vstChecked
+    OnChecking = vstChecking
     OnFreeNode = vstFreeNode
     OnGetText = vstGetText
     OnGetNodeDataSize = vstGetNodeDataSize
